@@ -1,0 +1,5 @@
+name: cubecobra
+dependencies:
+  - numpy
+  - pandas
+  - networkx
