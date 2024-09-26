@@ -3,3 +3,6 @@ dependencies:
   - numpy
   - pandas
   - networkx
+  - matplotlib
+  - scipy
+  - lxml
