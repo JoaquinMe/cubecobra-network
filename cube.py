@@ -1,18 +1,31 @@
-#! /env/bin/python3
 import json
 import networkx as nx
+from networkx.algorithms import bipartite
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
 import lxml
 import pickle
+from joblib import Parallel, delayed
+from datasketch import MinHash
+
+def jaccard_minhash(vecinos_u,vecinos_v):
+    m1, m2 = MinHash(), MinHash()
+    for d in vecinos_u:
+        m1.update(d.encode('utf8'))
+    for d in vecinos_v:
+        m2.update(d.encode('utf8'))
+    return m1.jaccard(m2)
 
 
-with open('test.json', 'r') as file:
+def get_nodes_by_property(graph, property_name, value):
+    return [n for n, attr in graph.nodes(data=True) if attr.get(property_name) == value]
+
+with open('2024-10-08.json', 'r') as file:
     data_cubos = json.load(file)
 with open('oracle-cards.json','r') as file:
     data_cartas=json.load(file)
-with open('DBs/indexToOracleMap.json','r') as file:
+with open('indexToOracleMap.json','r') as file:
     indice=json.load(file)
 indice = {int(k): v for k, v in indice.items()}
 
@@ -28,15 +41,11 @@ indice = {int(k): v for k, v in indice.items()}
 #following
 
 #hago dict de cubos
-cubos_dict = {
-    
-}
+cubos_dict = {}
 for cubo in data_cubos:
     cube_copy={k if k!='iamge_artist' else 'image_artist' :v for k,v in cubo.items() if k!= 'id'}
     cube_copy['object_type']="cube"
     cubos_dict[cubo['id']]=cube_copy
-
-#print(cubos_dict["bffffb1a-2c70-4287-8e6d-cd080413577a"])
 
 #hago dict de cartas
 cartas_dict={}
@@ -54,10 +63,6 @@ for card in data_cartas:
     card_copy['object_type'] = "card"
     cartas_dict[card['oracle_id']] = card_copy
 
-
-def get_nodes_by_property(graph, property_name, value):
-    return [n for n, attr in graph.nodes(data=True) if attr.get(property_name) == value]
-
 red=nx.Graph()
 #Añado cada cubo con sus atributos
 for node_id, attributes in cubos_dict.items():
@@ -67,17 +72,21 @@ for node_id, attributes in cubos_dict.items():
 for node_id, attributes in cartas_dict.items():
     red.add_node(node_id, **attributes)
 
-nodos_cubos=get_nodes_by_property(red,"object_type","cube")
+nodos_cubos=get_nodes_by_property(red,"object_type","cube")#lista de ids
 nodos_cartas=get_nodes_by_property(red,"object_type","card")
 
-#hago enlaces
-for nodo_id in nodos_cubos:
-    for card in red.nodes[nodo_id]["cards"]:
-        #tengo que linkear acá
-        #print(card,nodo_id,"   ",indice[card])
-        if(card in indice):
-            red.add_edge(nodo_id,indice[card])
+i=0
+#enlazo
+for cubo_id in nodos_cubos:
+    cubo=red.nodes[cubo_id]
+    cartas_en_el_cubo=cubo["cards"]
+    
+    cartas_indexadas=[indice[carta] for carta in cartas_en_el_cubo if carta!=-1]
+    #tengo que armar una lista de tuplas:
+    enlaces= [(cubo_id, carta) for carta in cartas_indexadas]
+    red.add_edges_from(enlaces)
 
-print(red)
-with open("graph.pkl", "wb") as f:
-    pickle.dump(red, f)
+#ahora tengo que proyectar
+print(f"Red Original: {red}")
+proyectada_no_pesada=bipartite.projected_graph(red,nodos_cubos)
+print(f"Red Original: {proyectada_no_pesada}")

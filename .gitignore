@@ -2,6 +2,8 @@
 /DBs
 .pkl
 indexToOracleMap.json
-indexToOracleMap.json
 graph.pkl
 oracle-cards.json
+2024-10-08.json
+simpleCardDict.json
+test.py
