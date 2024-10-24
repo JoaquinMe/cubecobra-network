@@ -1,42 +1,67 @@
-
 import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
+import pickle
+
+#uso este script para analizar la red
 
 
-def jaccard(G, u, v):
-
-    unbrs = set(G[u])
-
-    vnbrs = set(G[v])
-
-    return float(len(unbrs & vnbrs)) / len(unbrs | vnbrs)
+filename = "2024-10-08_unproyected.pkl"
 
 
-red=nx.Graph()
+def get_nodes_by_property(graph, property_name, value):
+    return [n for n, attr in graph.nodes(data=True) if attr.get(property_name) == value]
 
-red.add_nodes_from([1,2,3,4,5],bipartite=0)
-red.add_nodes_from(["a","b","c","d"],bipartite=1)
+def load_graph_pickle(filename):
+    with open(filename, "rb") as f:
+        graph = pickle.load(f)
+    return graph
+def find_first_matching_node(G, **attributes):
+    for node, attrs in G.nodes(data=True):
+        if all(attrs.get(key) == value for key, value in attributes.items()):
+            return node
+    return None
+def find_node_with_highest_property(G, property_name):
+    return max(G.nodes(data=True), key=lambda x: x[1].get(property_name, float('-inf')))[0]
 
-edges=[(1,"a"),(1,"d"),(2,"c"),(3,"a"),(3,"b"),(4,"c"),(4,"d"),(5,"a"),(5,"d")]
+red = load_graph_pickle(filename)
+nodos_cubos = get_nodes_by_property(red, "object_type", "cube")  # lista de ids
+nodos_cartas = get_nodes_by_property(red, "object_type", "card")
 
-red.add_edges_from(edges)
+print("red entera: ",red)
+print("cubos: ",len(nodos_cubos))
+print("cartas: ",len(nodos_cartas))
 
-numeros=[n for n, attrs in red.nodes(data=True) if attrs.get("bipartite")==0]
+#quiero una tablita con followers, numero de cubos
+#busco maximo numero de followers
+max_followers=float("-inf")
+cubo_id_max_followers=""
+for cubo_id in nodos_cubos:
+    followers=len(red.nodes[cubo_id]["following"])
+    if followers>max_followers:
+        max_followers=followers
+        cubo_id_max_followers=cubo_id
+        print(max_followers,cubo_id_max_followers)
+print("cubo con mas followers: ",cubo_id_max_followers)
+print("tiene ",max_followers, " followers")
 
-pos = nx.bipartite_layout(red,numeros)
 
-nx.draw(red, pos, with_labels=True, node_color='skyblue', node_size=800, font_size=12, font_weight='bold')
+tablita=pd.DataFrame(columns=["N Followers","N Cubos"])
+for i in range(0,max_followers+1):
+    NCubos=len([n for n, attr in red.nodes(data=True) if attr.get("following") is not None and len(attr.get("following"))==i])
+    observacion={"N Followers":i,"N Cubos":NCubos}
+    tablita.loc[len(tablita)] = observacion
+tablita.to_csv("followers.csv",index=False)
 
-plt.show()
+cubos_0_seguidores=[n for n, attr in red.nodes(data=True) if attr.get("following") is not None and len(attr.get("following"))==0]
+print("cubos con 0 seguidores: ",len(cubos_0_seguidores))
+cubos_1_seguidor=[n for n, attr in red.nodes(data=True) if attr.get("following") is not None and len(attr.get("following"))==1]
+print("cubos con 1 seguidor: ",len(cubos_1_seguidor))
+red.remove_nodes_from(cubos_0_seguidores)
+print("red sin cubos con 0 seguidores: ", red)
+red.remove_nodes_from(cubos_1_seguidor)
+print("red con cubos con mas de 1 seguidor: ",red)
 
-proyectada=nx.bipartite.generic_weighted_projected_graph(red,numeros,weight_function=jaccard)
-
-pos_proyectada=nx.kamada_kawai_layout(proyectada)
-
-nx.draw(proyectada,pos_proyectada,with_labels=True)
-
-plt.show()
-
-print(proyectada.edges(data=True))
+print("ejemplo cubo con 2 seguidores o mas: ",red.nodes[find_first_matching_node(red,object_type="cube")],"id: ",find_first_matching_node(red,object_type="cube"))
