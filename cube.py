@@ -8,10 +8,10 @@ import pickle
 import scipy.sparse as sp
 from joblib import Parallel, delayed
 
-#este script pasa de archivos json(cubos.json,oracle-cards.json, index.json) a un archivo .pkl
-#que pueden levantar otros script
+# este script pasa de archivos json(cubos.json,oracle-cards.json, index.json) a un archivo .pkl
+# que pueden levantar otros script
 
-#NOTE:hacer que pase un archivo .pkl proyectado y otro no proyectado?
+# NOTE:hacer que pase un archivo .pkl proyectado y otro no proyectado?
 
 
 def get_nodes_by_property(graph, property_name, value):
