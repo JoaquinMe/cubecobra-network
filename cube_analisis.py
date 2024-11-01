@@ -36,8 +36,15 @@ data_raw = pd.Series(lista_cant_cartas_1, name="N Cartas")
 print(data_raw.describe())
 
 # hacer histograma
-plt.hist(lista_cant_cartas_1)
-plt.show()
+plt.hist(lista_cant_cartas_1, bins=30)
+plt.xlabel("Cantidad de cartas en el cubo")
+plt.ylabel("Cantidad de cubos")
+plt.title("Distribución de cartas en cubos: Todos los cubos")
+plt.savefig(
+    "Distribución de cartas en cubos_todos.png", format="png", dpi=300
+)  # Saves as a high-resolution PNG
+plt.close()  # Close the figure
+
 
 # opero sobre los cubos que tienen mas de dos seguidores
 lista_cant_cartas_2 = []
@@ -47,5 +54,11 @@ for cubo_id in cubos_dict:
 
 data_curada = pd.Series(lista_cant_cartas_2, name="N Cartas")
 print(data_curada.describe())
-plt.hist(lista_cant_cartas_2)
+plt.hist(lista_cant_cartas_2, bins=30)
+plt.xlabel("Cantidad de cartas en el cubo")
+plt.ylabel("Cantidad de cubos")
+plt.title("Distribución de cartas en cubos: Cubos populares(follow>=2)")
+plt.savefig(
+    "Distribución de cartas en cubos_popu.png", format="png", dpi=300
+)  # Saves as a high-resolution PNG
 plt.show()
