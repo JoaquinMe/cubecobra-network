@@ -23,11 +23,11 @@ red = load_graph_pickle(filename)
 print(red)
 fuerzas_nodos = [data["strength"] for _, _, data in red.edges(data=True)]
 
-# plt.hist(fuerzas_nodos, color="skyblue", edgecolor="black")
-# plt.xlabel("Fuerza de los enlaces")
-# plt.ylabel("Cantidad")
-# plt.title("Histograma de fuerza de enlace en la red")
-# plt.savefig(
-#     "edge_strength_histogram.png", format="png", dpi=300
-# )  # Saves as a high-resolution PNG
-# plt.close()  # Close the figure
+plt.hist(fuerzas_nodos, color="skyblue", edgecolor="black", bins=30)
+plt.xlabel("Fuerza de los enlaces")
+plt.ylabel("Cantidad")
+plt.title("Histograma de fuerza de enlace en la red")
+plt.savefig(
+    "edge_strength_histogram.png", format="png", dpi=300
+)  # Saves as a high-resolution PNG
+plt.close()  # Close the figure
