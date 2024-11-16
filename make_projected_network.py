@@ -13,14 +13,6 @@ from datasketch import MinHash
 
 # TODO: Chequear que funcione bien esta función
 # Debería ser mas rapida que jaccard pero no está pasando eso
-def minhash_jaccard(list1, list2, num_perm=64):
-    m1, m2 = MinHash(num_perm=num_perm), MinHash(num_perm=num_perm)
-    for item in list1:
-        m1.update(str(item).encode("utf8"))
-    for item in list2:
-        m2.update(str(item).encode("utf8"))
-
-    return m1.jaccard(m2)
 
 
 def jaccard(list1, list2):
@@ -57,27 +49,52 @@ red = nx.Graph()
 for node_id, attributes in cubos_dict.items():
     red.add_node(node_id, **attributes)
 
-cubos_pocos_seguidores = [
-    n for n, attr in red.nodes(data=True) if len(attr.get("following")) <= 1
+cubos_a_borrar = [
+    n for n, attr in red.nodes(data=True) if len(attr.get("following", [])) <= 1
 ]
-red.remove_nodes_from(cubos_pocos_seguidores)
-
-cubos_vacios = [n for n, attr in red.nodes(data=True) if len(attr.get("cards")) == 0]
-red.remove_nodes_from(cubos_vacios)
-
+print("antes de borrar: ", red)
+red.remove_nodes_from(cubos_a_borrar)
+print("dsps de borrar: ", red)
 tamaño = red.number_of_nodes()
 count = 0
-print(red)
+
+print("antes de enlazar cubos", red)
 # tiro enlaces entre todos los cubos
 for nodo_i in red.nodes:
     for nodo_j in red.nodes:
         if nodo_i != nodo_j:
             fuerza = jaccard(red.nodes[nodo_i]["cards"], red.nodes[nodo_j]["cards"])
-            if fuerza != 0:
-                red.add_edge(nodo_i, nodo_j, strength=fuerza)
-    count += 1
-    print(f"progreso: {(count / tamaño) * 100}%, {count} de {tamaño}", end="\r")
-print(red)
 
-with open(name + "_proyected+ " + ".pkl", "wb") as f:
+            if fuerza != 0:
+                red.add_edge(nodo_i, nodo_j, strength=fuerza, edge_type="cube")
+    count += 1
+    print(
+        f"progreso enlazado entre cubos: {(count / tamaño) * 100}%, {count} de {tamaño}",
+        end="\r",
+    )
+print("despues de enlazar cubos", red)
+
+lista_cubos = [
+    n for n, attr in red.nodes(data=True) if attr.get("object_type", []) == "cube"
+]
+
+print("antes de poner users", red)
+# añado users
+for cubo_id in lista_cubos:
+    dueño_id = red.nodes[cubo_id]["owner_id"]
+    red.add_edge(cubo_id, dueño_id, edge_type="user")
+
+    seguidores = red.nodes[cubo_id]["following"]
+    seguidores = [
+        seguidor for seguidor in seguidores if isinstance(seguidor, str)
+    ]  # hay un cubo raro que tiene ids que no son str
+
+    for seguidor in seguidores:
+        red.add_node(seguidor, object_type="user")
+
+    for seguidor in seguidores:
+        red.add_edge(cubo_id, seguidor, edge_type="user")
+
+print("despues de poner users", red)
+with open(name + "_proyected" + ".pkl", "wb") as f:
     pickle.dump(red, f)
